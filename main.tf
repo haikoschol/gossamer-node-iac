@@ -2,11 +2,11 @@ terraform {
   required_providers {
     hcloud = {
       source = "hetznercloud/hcloud"
-      version = "1.47.0"
+      version = "1.60.1"
     }
     hetznerdns = {
-      source = "timohirt/hetznerdns"
-      version = "2.1.0"
+      source = "germanbrew/hetznerdns"
+      version = "3.5.0"
     }
   }
 }
@@ -16,7 +16,7 @@ provider "hcloud" {
 }
 
 provider "hetznerdns" {
-  apitoken = var.hetznerdns_token
+  api_token = var.hetznerdns_token
 }
 
 variable "hcloud_token" {
@@ -47,7 +47,7 @@ variable "operating_system" {
 }
 
 data "external" "ssh_key" {
-  program = ["bash", "-c", "echo \"{\\\"output\\\": \\\"$(ssh-add -L | head -n 1)\\\"}\""]
+  program = ["bash", "-c", "echo \"{\\\"output\\\": \\\"$(ssh-add -L | grep -E '^(ssh-ed25519|ssh-rsa|ecdsa-sha2-nistp)' | head -n 1)\\\"}\""]
 }
 
 resource "hcloud_ssh_key" "default" {
@@ -58,7 +58,7 @@ resource "hcloud_ssh_key" "default" {
 resource "hcloud_primary_ip" "primary_ipv4" {
   name          = "primary_ipv4"
   type          = "ipv4"
-  datacenter    = "hel1-dc2"
+  location      = "hel1"
   assignee_type = "server"
   auto_delete   = false
 }
@@ -66,17 +66,18 @@ resource "hcloud_primary_ip" "primary_ipv4" {
 resource "hcloud_primary_ip" "primary_ipv6" {
   name          = "primary_ipv6"
   type          = "ipv6"
-  datacenter    = "hel1-dc2"
+  location      = "hel1"
   assignee_type = "server"
   auto_delete   = false
 }
 
-data "hetznerdns_zone" "zone" {
+resource "hetznerdns_zone" "zone" {
   name = var.dns_zone
+  ttl  = 3600
 }
 
 resource "hetznerdns_record" "wildcard_ipv4" {
-  zone_id = data.hetznerdns_zone.zone.id
+  zone_id = hetznerdns_zone.zone.id
   name    = "*"
   type    = "A"
   ttl     = 300
@@ -84,7 +85,7 @@ resource "hetznerdns_record" "wildcard_ipv4" {
 }
 
 resource "hetznerdns_record" "wildcard_ipv6" {
-  zone_id = data.hetznerdns_zone.zone.id
+  zone_id = hetznerdns_zone.zone.id
   name    = "*"
   type    = "AAAA"
   ttl     = 300
@@ -92,7 +93,7 @@ resource "hetznerdns_record" "wildcard_ipv6" {
 }
 
 resource "hcloud_server" "server" {
-  name        = "gossamer-node"
+  name        = "polkadot"
   server_type = var.instance_type
   image       = var.operating_system
   location    = "hel1"  
