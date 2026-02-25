@@ -24,7 +24,7 @@ ufw default deny incoming
 ufw default allow outgoing
 ufw allow ssh
 ufw allow https
-ufw allow 30334
+ufw allow 30334/udp
 ufw --force enable
 
 USERNAME=haiko
