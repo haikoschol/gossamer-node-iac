@@ -4,10 +4,6 @@ terraform {
       source = "hetznercloud/hcloud"
       version = "1.60.1"
     }
-    hetznerdns = {
-      source = "germanbrew/hetznerdns"
-      version = "3.5.0"
-    }
   }
 }
 
@@ -15,18 +11,8 @@ provider "hcloud" {
   token = var.hcloud_token
 }
 
-provider "hetznerdns" {
-  api_token = var.hetznerdns_token
-}
-
 variable "hcloud_token" {
   description = "Hetzner Cloud API Token"
-  type        = string
-  sensitive   = true
-}
-
-variable "hetznerdns_token" {
-  description = "Hetzner DNS API Token"
   type        = string
   sensitive   = true
 }
@@ -71,25 +57,26 @@ resource "hcloud_primary_ip" "primary_ipv6" {
   auto_delete   = false
 }
 
-resource "hetznerdns_zone" "zone" {
+resource "hcloud_zone" "zone" {
   name = var.dns_zone
   ttl  = 3600
+  mode = "primary"
 }
 
-resource "hetznerdns_record" "wildcard_ipv4" {
-  zone_id = hetznerdns_zone.zone.id
+resource "hcloud_zone_rrset" "wildcard_ipv4" {
+  zone    = hcloud_zone.zone.id
   name    = "*"
   type    = "A"
   ttl     = 300
-  value   = hcloud_primary_ip.primary_ipv4.ip_address
+  records = [{ value = hcloud_primary_ip.primary_ipv4.ip_address }]
 }
 
-resource "hetznerdns_record" "wildcard_ipv6" {
-  zone_id = hetznerdns_zone.zone.id
+resource "hcloud_zone_rrset" "wildcard_ipv6" {
+  zone    = hcloud_zone.zone.id
   name    = "*"
   type    = "AAAA"
   ttl     = 300
-  value   = hcloud_primary_ip.primary_ipv6.ip_address
+  records = [{ value = "${hcloud_primary_ip.primary_ipv6.ip_address}1" }]
 }
 
 resource "hcloud_server" "server" {
